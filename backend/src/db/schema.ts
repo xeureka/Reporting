@@ -18,7 +18,7 @@ export const studentLevel = pgEnum('student_level', [
 export const classType = pgEnum('class_type', ['Private', 'Mini Group']);
 export const studentStatus = pgEnum('student_status', ['Active', 'Paused', 'Completed']);
 export const assignmentStatus = pgEnum('assignment_status', ['Active', 'Upcoming', 'Ended', 'Cancelled']);
-export const deliveryMode = pgEnum('delivery_mode', ['Classroom', 'Online']);
+export const deliveryMode = pgEnum('delivery_mode', ['Classroom', 'Online', 'Private', 'Mini Group']);
 export const attendanceStatus = pgEnum('attendance_status', ['Present', 'Absent', 'Late', 'Cancelled']);
 
 export const users = pgTable('users', {

@@ -79,7 +79,7 @@ export const Assignment = z.object({
   endTime: z.string().optional(),
   startDate: IsoDate,
   endDate: IsoDate.optional(),
-  mode: z.enum(['Classroom', 'Online']),
+  mode: z.enum(['Classroom', 'Online', 'Private', 'Mini Group']),
   status: z.enum(AssignmentStatuses),
   createdAt: z.string(),
   updatedAt: z.string(),

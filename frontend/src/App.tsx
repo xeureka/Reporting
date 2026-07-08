@@ -381,7 +381,7 @@ function AdminDashboard() {
                 {courses.data?.map((c) => <option key={c.id} value={c.id}>{c.courseName}</option>)}
               </select>
               <select value={planType} onChange={(e) => setPlanType(e.target.value)}>
-                {['Private', 'Mini Group'].map((p) => <option key={p}>{p}</option>)}
+                {['Classroom', 'Online', 'Private', 'Mini Group'].map((p) => <option key={p}>{p}</option>)}
               </select>
               <button type="submit" disabled={createAssignment.isPending || !assignTeacherId || !assignStudentId || !assignCourseId}>Create Assignment</button>
             </form>
@@ -661,8 +661,11 @@ function CoursesPage() {
 function AssignmentsPage() {
   const qc = useQueryClient();
   const assignments = useQuery({ queryKey: ['assignments'], queryFn: () => api.assignments({ status: 'Active' }), retry: false });
+  const teachers = useQuery({ queryKey: ['teachers'], queryFn: () => api.teachers(), retry: false });
+  const students = useQuery({ queryKey: ['students'], queryFn: () => api.students(), retry: false });
+  const courses = useQuery({ queryKey: ['courses'], queryFn: api.courses, retry: false });
   const [showForm, setShowForm] = useState(false);
-  const [fields, setFields] = useState({ assignmentName: '', teacherId: 'teacher-1', studentId: 'student-1', courseId: 'course-1', days: 'Mon,Wed,Fri', startTime: '09:00', startDate: new Date().toISOString().slice(0, 10), mode: 'Online' });
+  const [fields, setFields] = useState({ assignmentName: '', teacherId: '', studentId: '', courseId: '', days: 'Mon,Wed,Fri', startTime: '09:00', startDate: new Date().toISOString().slice(0, 10), mode: 'Online' });
   const create = useMutation({
     mutationFn: (body: Record<string, unknown>) => api.createAssignment(body),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['assignments'] }); setShowForm(false); },
@@ -675,10 +678,25 @@ function AssignmentsPage() {
       {showForm && (
         <form className="inline-form" onSubmit={(e) => { e.preventDefault(); create.mutate(fields); }}>
           <input value={fields.assignmentName} onChange={(e) => setFields({ ...fields, assignmentName: e.target.value })} placeholder="Assignment name" required />
+          <select value={fields.teacherId} onChange={(e) => setFields({ ...fields, teacherId: e.target.value })} required>
+            <option value="">Select teacher</option>
+            {teachers.data?.map((t) => <option key={t.id} value={t.id}>{t.teacherName}</option>)}
+          </select>
+          <select value={fields.studentId} onChange={(e) => setFields({ ...fields, studentId: e.target.value })} required>
+            <option value="">Select student</option>
+            {students.data?.map((s) => <option key={s.id} value={s.id}>{s.studentName}</option>)}
+          </select>
+          <select value={fields.courseId} onChange={(e) => setFields({ ...fields, courseId: e.target.value })} required>
+            <option value="">Select course</option>
+            {courses.data?.map((c) => <option key={c.id} value={c.id}>{c.courseName}</option>)}
+          </select>
+          <select value={fields.mode} onChange={(e) => setFields({ ...fields, mode: e.target.value })} required>
+            {['Classroom', 'Online', 'Private', 'Mini Group'].map((m) => <option key={m}>{m}</option>)}
+          </select>
           <input value={fields.days} onChange={(e) => setFields({ ...fields, days: e.target.value })} placeholder="Days (Mon,Wed,Fri)" required />
           <input value={fields.startTime} onChange={(e) => setFields({ ...fields, startTime: e.target.value })} type="time" required />
           <input value={fields.startDate} onChange={(e) => setFields({ ...fields, startDate: e.target.value })} type="date" required />
-          <button type="submit" disabled={create.isPending}>Save</button>
+          <button type="submit" disabled={create.isPending || !fields.teacherId || !fields.studentId || !fields.courseId}>Save</button>
         </form>
       )}
       {assignments.data ? <AssignmentList rows={assignments.data} /> : <Skeleton />}
