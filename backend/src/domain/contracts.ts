@@ -127,6 +127,7 @@ const CreateSessionBase = Session.omit({ id: true, createdAt: true, updatedAt: t
     cancelled: true,
     durationMinutes: true,
     homeworkGiven: true,
+    homeworkSubmitted: true,
     vocabularyCovered: true,
     grammarCovered: true,
     speakingPractice: true,

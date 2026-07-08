@@ -1,7 +1,7 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type React from 'react';
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createRootRoute, createRoute, createRouter, Link, Outlet, RouterProvider, useParams, useRouter } from '@tanstack/react-router';
+import { createRootRoute, createRoute, createRouter, Link, Outlet, RouterProvider, useLocation, useParams, useRouter } from '@tanstack/react-router';
 
 import { AuthProvider, useAuth } from './auth';
 import { api, type Assignment, type DashboardData, type Homework, type Progress, type Session, type Student, type Teacher, type TeacherPerformance, type User } from './api';
@@ -177,6 +177,7 @@ function RootLayout() {
 function ProtectedLayout() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
+  const location = useLocation();
   const [sidebarCompact, setSidebarCompact] = useState(() => localStorage.getItem('sidebar-compact') === 'true');
 
   if (isLoading) return <div className="loading-screen"><Skeleton /></div>;
@@ -185,22 +186,46 @@ function ProtectedLayout() {
     return null;
   }
 
+  const adminOnly = useMemo(() => ['/', '/courses', '/assignments', '/sessions', '/homework', '/reports'], []);
+  useEffect(() => {
+    if (user.role !== 'admin' && adminOnly.includes(location.pathname)) {
+      router.navigate({ to: user.role === 'teacher' ? '/teacher' : `/students/${user.studentId}` });
+    } else if (user.role === 'student') {
+      const myPage = user.studentId ? `/students/${user.studentId}` : '/login';
+      if (location.pathname !== myPage) {
+        router.navigate({ to: myPage });
+      }
+    }
+  }, [user.role, user.studentId, location.pathname, router, adminOnly]);
+
   const toggleCompact = () => {
     const next = !sidebarCompact;
     setSidebarCompact(next);
     localStorage.setItem('sidebar-compact', String(next));
   };
 
-  const navItems = [
-    { to: '/', icon: HiOutlineHome, label: 'Dashboard' },
-    { to: '/teacher', icon: HiOutlineAcademicCap, label: 'Teacher' },
-    { to: '/students', icon: HiOutlineUserGroup, label: 'Students' },
-    { to: '/courses', icon: HiOutlineBookOpen, label: 'Courses' },
-    { to: '/assignments', icon: HiOutlineClipboardDocumentList, label: 'Assignments' },
-    { to: '/sessions', icon: HiOutlineCalendarDays, label: 'Sessions' },
-    { to: '/homework', icon: HiOutlinePencilSquare, label: 'Homework' },
-    { to: '/reports', icon: HiOutlineChartBarSquare, label: 'Reports' },
-  ];
+  const navItems = useMemo(() => {
+    if (user.role === 'admin') {
+      return [
+        { to: '/', icon: HiOutlineHome, label: 'Dashboard' },
+        { to: '/students', icon: HiOutlineUserGroup, label: 'Students' },
+        { to: '/courses', icon: HiOutlineBookOpen, label: 'Courses' },
+        { to: '/assignments', icon: HiOutlineClipboardDocumentList, label: 'Assignments' },
+        { to: '/sessions', icon: HiOutlineCalendarDays, label: 'Sessions' },
+        { to: '/homework', icon: HiOutlinePencilSquare, label: 'Homework' },
+        { to: '/reports', icon: HiOutlineChartBarSquare, label: 'Reports' },
+      ];
+    }
+    if (user.role === 'teacher') {
+      return [
+        { to: '/teacher', icon: HiOutlineAcademicCap, label: 'Teacher Dashboard' },
+        { to: '/students', icon: HiOutlineUserGroup, label: 'Students' },
+      ];
+    }
+    return [
+      { to: `/students/${user.studentId}`, icon: HiOutlineUser, label: 'My Page' },
+    ];
+  }, [user.role, user.studentId]);
 
   return (
     <div className={`app-shell ${sidebarCompact ? 'app-shell-compact' : ''}`}>
@@ -489,8 +514,13 @@ function TeacherDashboard() {
               lessonNumber: 1,
               lessonTitle: reportLessonTitle,
               attendance: reportAttendance,
+              present: reportAttendance === 'Present',
+              absent: reportAttendance === 'Absent',
+              late: reportAttendance === 'Late',
+              cancelled: reportAttendance === 'Cancelled',
               durationMinutes: 60,
               teacherNotes: reportNotes,
+              homeworkSubmitted: false,
             });
           }}>
             <select value={reportAssignmentId} onChange={(e) => setReportAssignmentId(e.target.value)} required>
@@ -502,7 +532,7 @@ function TeacherDashboard() {
             <select value={reportAttendance} onChange={(e) => setReportAttendance(e.target.value)}>
               {['Present', 'Absent', 'Late', 'Cancelled'].map((a) => <option key={a}>{a}</option>)}
             </select>
-            <input value={reportNotes} onChange={(e) => setReportNotes(e.target.value)} placeholder="Notes" />
+            <textarea value={reportNotes} onChange={(e) => setReportNotes(e.target.value)} placeholder="Notes (optional)" rows={4} />
             <button type="submit" disabled={createSession.isPending || !reportAssignmentId}>Submit</button>
           </form>
         </section>
@@ -770,14 +800,50 @@ function HomeworkPage() {
 function ReportsPage() {
   const dashboard = useQuery({ queryKey: ['dashboard', 'admin'], queryFn: api.adminDashboard, retry: false });
   const reports = dashboard.data?.reports;
+  const allSessions = useQuery({ queryKey: ['sessions', 'all'], queryFn: () => api.sessions(), retry: false });
+  const teachers = useQuery({ queryKey: ['teachers', 'all'], queryFn: () => api.teachers(), retry: false });
+  const students = useQuery({ queryKey: ['students', 'all'], queryFn: () => api.students(), retry: false });
+
+  const teacherMap = useMemo(
+    () => new Map((teachers.data ?? []).map((t) => [t.id, t.teacherName])),
+    [teachers.data],
+  );
+  const studentMap = useMemo(
+    () => new Map((students.data ?? []).map((s) => [s.id, s.studentName])),
+    [students.data],
+  );
+
+  const recentSessions = useMemo(
+    () => (allSessions.data ?? []).slice().sort((a, b) => b.sessionDate.localeCompare(a.sessionDate)),
+    [allSessions.data],
+  );
+
+  const sessionColumns = useMemo(() => [
+    { label: 'Date', render: (r: Session) => r.sessionDate },
+    { label: 'Teacher', render: (r: Session) => teacherMap.get(r.teacherId) ?? r.teacherId },
+    { label: 'Student', render: (r: Session) => studentMap.get(r.studentId) ?? r.studentId },
+    { label: 'Lesson', render: (r: Session) => r.lessonTitle },
+    { label: 'Attendance', render: (r: Session) => <Badge>{r.attendance}</Badge> },
+    { label: 'Notes', render: (r: Session) => r.teacherNotes || '-' },
+    { label: 'Homework', render: (r: Session) => r.homeworkSubmitted ? <Badge>Yes</Badge> : <Badge>No</Badge> },
+  ], [teacherMap, studentMap]);
+
   return (
     <Page title="Reports" subtitle="Computed views for attendance risk, missing reports, schedule drift, and active accounts.">
       {reports ? (
-        <div className="dashboard-grid">
-          <Panel title="Students with Low Attendance">{reports.studentsWithLowAttendance.length > 0 ? <StudentList rows={reports.studentsWithLowAttendance} /> : <p>None.</p>}</Panel>
-          <Panel title="Teachers with Missing Lesson Reports">{reports.teachersMissingLessonReports.length > 0 ? <TeacherList rows={reports.teachersMissingLessonReports} /> : <p>None.</p>}</Panel>
-          <Panel title="Students Behind Schedule">{reports.studentsBehindSchedule.length > 0 ? <StudentList rows={reports.studentsBehindSchedule} /> : <p>None.</p>}</Panel>
-        </div>
+        <>
+          <div className="dashboard-grid">
+            <Panel title="Students with Low Attendance">{reports.studentsWithLowAttendance.length > 0 ? <StudentList rows={reports.studentsWithLowAttendance} /> : <p>None.</p>}</Panel>
+            <Panel title="Teachers with Missing Lesson Reports">{reports.teachersMissingLessonReports.length > 0 ? <TeacherList rows={reports.teachersMissingLessonReports} /> : <p>None.</p>}</Panel>
+            <Panel title="Students Behind Schedule">{reports.studentsBehindSchedule.length > 0 ? <StudentList rows={reports.studentsBehindSchedule} /> : <p>None.</p>}</Panel>
+          </div>
+          <div className="dashboard-grid" style={{ marginTop: '18px' }}>
+            <section className="panel">
+              <header><h2>Submitted Session Reports</h2></header>
+              {recentSessions.length > 0 ? <Table rows={recentSessions} columns={sessionColumns} /> : <p>None.</p>}
+            </section>
+          </div>
+        </>
       ) : <Skeleton />}
     </Page>
   );
