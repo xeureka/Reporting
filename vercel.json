@@ -6,7 +6,8 @@
     },
     "backend": {
       "root": "backend/",
-      "framework": "hono"
+      "framework": "node",
+      "entrypoint": "api/index.ts"
     }
   },
   "rewrites": [
