@@ -11,6 +11,9 @@ import {
 } from './domain/contracts.js';
 import { repository as mem } from './repositories/memory.js';
 import { drizzleRepository as db } from './repositories/drizzle.js';
+import { loadEnv } from './load-env.js';
+
+loadEnv();
 
 const USE_DB = Boolean(process.env.DATABASE_URL);
 const repo = USE_DB ? db : mem;
@@ -48,6 +51,13 @@ app.openapi(
   }),
   async (c) => {
     const { email, password } = c.req.valid('json');
+    if (USE_DB) {
+      await (repo as typeof db).seedUsersAsync();
+      const user = await (repo as typeof db).loginDB(email, password);
+      if (!user) throw new HTTPException(401, { message: 'Invalid email or password' });
+      const token = await sign({ sub: user.id, role: user.role, exp: Math.floor(Date.now() / 1000) + 86400 * 7 }, JWT_SECRET);
+      return c.json({ token, user }, 200);
+    }
     const user = repo.users.find((u) => u.email === email);
     if (!user || user.password !== password) throw new HTTPException(401, { message: 'Invalid email or password' });
     const token = await sign({ sub: user.id, role: user.role, exp: Math.floor(Date.now() / 1000) + 86400 * 7 }, JWT_SECRET);
@@ -60,19 +70,17 @@ app.openapi(
   createRoute({ method: 'get', path: '/api/auth/me', responses: { 200: { content: { 'application/json': { schema: AuthUser } }, description: 'OK' } } }),
   async (c) => {
     const userId = getUserId(c);
+    if (USE_DB) {
+      const user = await (repo as typeof db).getUserFromDB(userId);
+      if (!user) throw new HTTPException(401, { message: 'Unauthorized' });
+      return c.json(user, 200);
+    }
     const user = repo.users.find((u) => u.id === userId);
     if (!user) throw new HTTPException(401, { message: 'Unauthorized' });
     const { password: _pw, ...safeUser } = user;
     return c.json(safeUser, 200);
   },
 );
-
-function genPassword() {
-  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
-  let pw = '';
-  for (let i = 0; i < 10; i++) pw += chars[Math.floor(Math.random() * chars.length)];
-  return pw;
-}
 
 app.openapi(
   createRoute({
@@ -82,10 +90,17 @@ app.openapi(
   }),
   async (c) => {
     const userId = getUserId(c);
+    if (USE_DB) {
+      const caller = await (repo as typeof db).getUserFromDB(userId);
+      if (!caller || caller.role !== 'admin') throw new HTTPException(401, { message: 'Only admin can register users' });
+      const body = c.req.valid('json');
+      const { user, password } = await (repo as typeof db).createUserInDB({ name: body.name, email: body.email, role: body.role, teacherId: body.teacherId, studentId: body.studentId });
+      return c.json({ id: user.id, email: user.email, password, role: user.role }, 201);
+    }
     const caller = repo.users.find((u) => u.id === userId);
     if (!caller || caller.role !== 'admin') throw new HTTPException(401, { message: 'Only admin can register users' });
     const body = c.req.valid('json');
-    const password = genPassword();
+    const password = [...Array(10)].map(() => 'abcdefghjkmnpqrstuvwxyz23456789'[Math.floor(Math.random() * 30)]).join('');
     const newUser = { id: `user-${body.role}-${Math.random().toString(36).slice(2, 7)}`, name: body.name, email: body.email, password, role: body.role, teacherId: body.teacherId, studentId: body.studentId };
     repo.users.push(newUser);
     return c.json({ id: newUser.id, email: newUser.email, password, role: newUser.role }, 201);
@@ -100,6 +115,12 @@ app.openapi(
   }),
   async (c) => {
     const userId = getUserId(c);
+    if (USE_DB) {
+      const { currentPassword, newPassword } = c.req.valid('json');
+      const result = await (repo as typeof db).updatePasswordInDB(userId, currentPassword, newPassword);
+      if (!result.ok) throw new HTTPException(401, { message: result.message });
+      return c.json({ message: 'Password updated' }, 200);
+    }
     const user = repo.users.find((u) => u.id === userId);
     if (!user) throw new HTTPException(401, { message: 'Unauthorized' });
     const { currentPassword, newPassword } = c.req.valid('json');
@@ -122,7 +143,11 @@ app.openapi(
 app.openapi(
   createRoute({ method: 'post', path: '/api/teachers', request: { body: { content: { 'application/json': { schema: CreateTeacher } } } }, responses: created(Teacher) }),
   async (c) => {
-    const created = USE_DB ? await (repo as typeof db).createTeacher(c.req.valid('json') as Record<string, unknown>) : (repo as typeof mem).create((repo as typeof mem).teachers, { status: 'active', ...c.req.valid('json') } as any);
+    if (USE_DB) {
+      const { entity, password } = await (repo as typeof db).createTeacher(c.req.valid('json') as Record<string, unknown>);
+      return c.json({ ...entity, password }, 201);
+    }
+    const created = (repo as typeof mem).create((repo as typeof mem).teachers, { status: 'active', ...c.req.valid('json') } as any);
     return c.json(created, 201);
   },
 );
@@ -157,7 +182,11 @@ app.openapi(
 app.openapi(
   createRoute({ method: 'post', path: '/api/students', request: { body: { content: { 'application/json': { schema: CreateStudent } } } }, responses: created(Student) }),
   async (c) => {
-    const created = USE_DB ? await (repo as typeof db).createStudent(c.req.valid('json') as Record<string, unknown>) : (repo as typeof mem).create((repo as typeof mem).students, { status: 'Active', ...c.req.valid('json') } as any);
+    if (USE_DB) {
+      const { entity, password } = await (repo as typeof db).createStudent(c.req.valid('json') as Record<string, unknown>);
+      return c.json({ ...entity, password }, 201);
+    }
+    const created = (repo as typeof mem).create((repo as typeof mem).students, { status: 'Active', ...c.req.valid('json') } as any);
     return c.json(created, 201);
   },
 );

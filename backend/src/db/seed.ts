@@ -4,6 +4,9 @@ import {
   teacherPerformance,
 } from './schema.js';
 import process from 'node:process';
+import bcrypt from 'bcryptjs';
+import { loadEnv } from '../load-env.js';
+loadEnv();
 
 async function seed() {
   const db = getDb();
@@ -21,11 +24,13 @@ async function seed() {
   await db.delete(teachers);
   await db.delete(users);
 
+  const hash = (pw: string) => bcrypt.hashSync(pw, 10);
+
   // Users
   await db.insert(users).values([
-    { id: 'user-admin', name: 'Admin User', email: 'admin@speaktoreach.local', passwordHash: 'admin123', role: 'admin' },
-    { id: 'user-teacher-1', name: 'Maya Tesfaye', email: 'maya@speaktoreach.local', passwordHash: 'teacher123', role: 'teacher', teacherId: 'teacher-1' },
-    { id: 'user-teacher-2', name: 'Jonas Bekele', email: 'jonas@speaktoreach.local', passwordHash: 'teacher123', role: 'teacher', teacherId: 'teacher-2' },
+    { id: 'user-admin', name: 'Admin User', email: 'admin@speaktoreach.local', passwordHash: hash('admin123'), role: 'admin' },
+    { id: 'user-teacher-1', name: 'Maya Tesfaye', email: 'maya@speaktoreach.local', passwordHash: hash('teacher123'), role: 'teacher', teacherId: 'teacher-1' },
+    { id: 'user-teacher-2', name: 'Jonas Bekele', email: 'jonas@speaktoreach.local', passwordHash: hash('teacher123'), role: 'teacher', teacherId: 'teacher-2' },
   ]);
 
   // Teachers
