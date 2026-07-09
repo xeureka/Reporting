@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
+import { swaggerUI } from '@hono/swagger-ui';
 import { cors } from 'hono/cors';
 import { sign } from 'hono/jwt';
 import { HTTPException } from 'hono/http-exception';
@@ -440,6 +441,8 @@ app.doc('/openapi.json', {
   openapi: '3.1.0',
   info: { title: 'Speak To Reach Management API', version: '1.0.0', description: 'Typesafe Hono RPC API for teachers, students, classes, sessions, attendance, homework, progress, reports, and Notion setup.' },
 });
+
+app.get('/api/docs', swaggerUI({ url: '/openapi.json' }));
 
 export type AppType = typeof app;
 export default app;

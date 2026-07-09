@@ -135,8 +135,11 @@ pnpm --filter @speak-to-reach/frontend dev
 
 The API is automatically documented via OpenAPI. With the server running, visit:
 
-```
-http://localhost:3000/openapi.json
-```
+| Resource | URL |
+|---|---|
+| **Swagger UI** | `http://localhost:3000/api/docs` |
+| **OpenAPI JSON** | `http://localhost:3000/openapi.json` |
+
+The Swagger UI provides an interactive interface to explore and test all API endpoints directly from your browser.
 
 All API routes are prefixed with `/api/` and include endpoints for auth, teachers, students, courses, assignments, sessions, homework, progress, performance, and reports.
