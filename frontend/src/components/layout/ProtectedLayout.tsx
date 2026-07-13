@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   HiOutlineArrowRightOnRectangle,
   HiOutlineChatBubbleLeftRight,
@@ -10,7 +10,7 @@ import { Link, Outlet, useLocation, useRouter } from '@tanstack/react-router';
 import { useAuth } from '../../auth';
 import { ADMIN_ONLY_PATHS, getNavItems } from '../../lib/navigation';
 import { Badge } from '../ui/Badge';
-import { Skeleton } from '../ui/Skeleton';
+import { PremiumLoadingScreen } from '../ui/PremiumLoadingScreen';
 
 const SIDEBAR_COMPACT_KEY = 'sidebar-compact';
 
@@ -27,6 +27,9 @@ export function ProtectedLayout() {
   const [sidebarCompact, setSidebarCompact] = useState(
     () => localStorage.getItem(SIDEBAR_COMPACT_KEY) === 'true',
   );
+  const [ready, setReady] = useState(false);
+
+  const handleLoadingComplete = useCallback(() => setReady(true), []);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -60,17 +63,12 @@ export function ProtectedLayout() {
     localStorage.setItem(SIDEBAR_COMPACT_KEY, String(next));
   };
 
-  if (isLoading || !user) {
-    return (
-      <div className="loading-screen" role="status" aria-live="polite">
-        <Skeleton height={120} />
-        <p className="loading-text">Loading your workspace...</p>
-      </div>
-    );
+  if (isLoading || !user || !ready) {
+    return <PremiumLoadingScreen onComplete={handleLoadingComplete} />;
   }
 
   return (
-    <div className={`app-shell ${sidebarCompact ? 'app-shell-compact' : ''}`}>
+    <div className={`app-shell premium-content-enter ${sidebarCompact ? 'app-shell-compact' : ''}`}>
       <aside className={`sidebar ${sidebarCompact ? 'sidebar-compact' : ''}`} aria-label="Application sidebar">
         <div className="brand">
           <div className="brand-icon">

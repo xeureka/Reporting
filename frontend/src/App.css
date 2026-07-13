@@ -579,6 +579,281 @@ th {
   color: var(--accent-strong);
 }
 
+/* ── Premium Loading Screen ─────────────────────────────────── */
+
+.premium-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #0a1f22 0%, #13292d 35%, #1a3a3f 65%, #0d3135 100%);
+  background-size: 300% 300%;
+  animation: gradient-shift 8s ease infinite;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.premium-loading-overlay.premium-loading-exit {
+  opacity: 0;
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── Skeleton Shell (behind overlay) ──────────────────────── */
+
+.premium-skeleton-shell {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.premium-skeleton-sidebar {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100svh;
+  padding: 22px 16px;
+  background: #13292d;
+}
+
+.premium-skeleton-brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 8px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.premium-skeleton-nav {
+  display: grid;
+  gap: 5px;
+  margin-top: 18px;
+}
+
+.premium-skeleton-nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 7px;
+}
+
+.premium-skeleton-footer {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.premium-skeleton-content {
+  padding: 28px;
+  background: var(--bg);
+}
+
+.premium-skeleton-page-header {
+  display: grid;
+  gap: 0;
+}
+
+.premium-skeleton-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.premium-skeleton-metric {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.premium-skeleton-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.premium-skeleton-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.premium-skeleton-panel-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.premium-skeleton-panel-body {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+}
+
+/* ── Loading Panel ─────────────────────────────────────────── */
+
+.premium-loading-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 24px;
+  justify-items: center;
+  width: 100%;
+  max-width: 420px;
+  padding: 44px 40px 36px;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.35);
+}
+
+.premium-loading-brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.premium-loading-brand-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #eef7f6;
+}
+
+.premium-loading-brand strong {
+  font-size: 18px;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+/* ── Percentage ────────────────────────────────────────────── */
+
+.premium-loading-percentage {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  text-shadow: 0 0 40px rgba(8, 127, 140, 0.3);
+}
+
+.premium-loading-percent-sign {
+  font-size: 36px;
+  font-weight: 600;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+/* ── Progress Bar ──────────────────────────────────────────── */
+
+.premium-loading-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.premium-loading-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #087f8c, #20b2aa, #5eead4);
+  transition: width 0.1s linear;
+  box-shadow: 0 0 12px rgba(8, 127, 140, 0.5);
+}
+
+/* ── Loading Steps ─────────────────────────────────────────── */
+
+.premium-loading-steps {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.premium-loading-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.3s ease, background 0.3s ease;
+}
+
+.premium-loading-step.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.premium-loading-step.completed {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.premium-loading-step-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  transition: background 0.3s ease;
+}
+
+.premium-loading-step.active .premium-loading-step-icon {
+  background: rgba(8, 127, 140, 0.35);
+  animation: pulse-step 1.5s ease-in-out infinite;
+}
+
+.premium-loading-step.completed .premium-loading-step-icon {
+  background: rgba(47, 143, 91, 0.3);
+  color: #5eead4;
+}
+
+@keyframes pulse-step {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ── Content Enter Transition ──────────────────────────────── */
+
+.premium-content-enter {
+  animation: content-enter 0.45s ease-out both;
+}
+
+@keyframes content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .sidebar-user {
   display: grid;
   gap: 2px;
@@ -656,5 +931,30 @@ th {
 
   .callout {
     display: grid;
+  }
+
+  .premium-skeleton-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .premium-skeleton-sidebar {
+    display: none;
+  }
+
+  .premium-skeleton-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .premium-skeleton-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .premium-loading-panel {
+    margin: 16px;
+    padding: 32px 24px 28px;
+  }
+
+  .premium-loading-percentage {
+    font-size: 56px;
   }
 }
