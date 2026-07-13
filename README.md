@@ -17,42 +17,55 @@ A school management platform for English language courses with three roles: **Ad
 
 ```
 ├── backend/
+│   ├── drizzle/                  # SQL migrations and snapshots
 │   ├── src/
-│   │   ├── index.ts              # API routes (OpenAPIHono, 40+ endpoints)
-│   │   ├── server.ts             # Dev server entry (port 3000)
-│   │   ├── load-env.ts           # Custom .env loader
-│   │   ├── api/index.ts          # Vercel serverless entry
+│   │   ├── api/
+│   │   │   └── index.ts          # Vercel serverless entry
 │   │   ├── db/
 │   │   │   ├── connection.ts     # PostgreSQL + Drizzle connection
-│   │   │   ├── schema.ts         # Drizzle ORM schema (9 tables)
+│   │   │   ├── schema.ts         # Drizzle ORM schema
 │   │   │   └── seed.ts           # Database seed script
-│   │   ├── domain/contracts.ts   # Zod schemas & types
+│   │   ├── domain/
+│   │   │   └── contracts.ts      # Zod schemas & types
+│   │   ├── notion/               # Notion CLI and workspace integration
 │   │   ├── repositories/
 │   │   │   ├── drizzle.ts        # PostgreSQL repository
 │   │   │   └── memory.ts         # In-memory fallback repository
-│   │   └── notion/               # Notion workspace generator
-│   ├── drizzle/                  # SQL migrations
-│   ├── drizzle.config.ts
+│   │   ├── index.ts              # API routes (OpenAPIHono)
+│   │   ├── load-env.ts           # Custom .env loader
+│   │   └── server.ts             # Dev server entry (port 3000)
+│   ├── drizzle.config.ts         # Drizzle ORM configuration
 │   ├── package.json
 │   └── tsconfig.json
 │
 ├── frontend/
+│   ├── dist/                     # Production build output
+│   ├── public/                   # Public static assets (favicon, icons)
 │   ├── src/
-│   │   ├── App.tsx               # SPA: router, pages, components
-│   │   ├── App.css               # Application styles
-│   │   ├── index.css             # CSS variables & resets
+│   │   ├── assets/               # Images and SVGs
+│   │   ├── components/           # Reusable React components
+│   │   │   ├── forms/            # Form components (e.g., ChangePassword)
+│   │   │   ├── layout/           # Layout wrappers (RootLayout, ProtectedLayout)
+│   │   │   ├── lists/            # Data views (Dashboards, Courses, Students)
+│   │   │   └── ui/               # Generic UI elements (Badges, Tables, Panels)
+│   │   ├── lib/                  # Utilities, router config, query-client, constants
+│   │   ├── pages/                # Route-level components (Dashboards, Login, Reports)
 │   │   ├── api.ts                # Typed API client
-│   │   ├── auth.tsx              # Auth context (JWT)
+│   │   ├── App.css               # Application styles
+│   │   ├── App.tsx               # Main application routing and providers
+│   │   ├── auth.tsx              # Authentication context (JWT)
+│   │   ├── index.css             # CSS variables & resets
 │   │   └── main.tsx              # React entry point
-│   ├── index.html
-│   ├── vite.config.ts
+│   ├── index.html                # Vite HTML entry point
 │   ├── package.json
-│   └── tsconfig.json
+│   ├── tsconfig.*.json           # TypeScript configurations (app, node, base)
+│   └── vite.config.ts            # Vite bundler configuration
 │
 ├── package.json                  # Root workspace config
+├── pnpm-lock.yaml                # pnpm dependency lockfile
 ├── pnpm-workspace.yaml           # pnpm workspace definition
-├── vercel.json                   # Vercel deployment config
-└── .gitignore
+├── README.md                     # Project documentation
+└── vercel.json                   # Vercel deployment config
 ```
 
 ## Installation

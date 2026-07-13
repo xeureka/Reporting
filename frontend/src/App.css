@@ -52,6 +52,9 @@
 }
 
 .sidebar a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: #dcefed;
   padding: 10px 12px;
   border-radius: 7px;
@@ -137,6 +140,10 @@
 }
 
 .panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 16px 18px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-soft);
@@ -301,11 +308,15 @@ th {
   font-size: 13px;
 }
 
-.login-form label {
+.login-form .form-field {
   display: grid;
   gap: 5px;
   font-size: 14px;
+}
+
+.login-form .form-field span {
   color: #4a5a5f;
+  font-weight: 500;
 }
 
 .login-form input {
@@ -321,25 +332,10 @@ th {
   box-shadow: 0 0 0 3px rgba(8, 127, 140, 0.15);
 }
 
-.login-form button {
+.login-form .btn-primary {
   margin-top: 4px;
   padding: 11px;
-  background: #087f8c;
-  color: #ffffff;
-  border: none;
-  border-radius: 7px;
   font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.login-form button:hover:not(:disabled) {
-  background: #075e69;
-}
-
-.login-form button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .login-hint {
@@ -399,10 +395,11 @@ th {
   max-width: 600px;
 }
 
-/* ── Action Button & Inline Form ────────────────────────────── */
+/* ── Buttons & Forms ────────────────────────────────────────── */
 
+.btn-primary,
 .action-btn {
-  background: #087f8c;
+  background: var(--accent);
   color: #ffffff;
   border: none;
   padding: 9px 16px;
@@ -411,8 +408,47 @@ th {
   cursor: pointer;
 }
 
-.action-btn:hover {
-  background: #075e69;
+.btn-primary:hover:not(:disabled),
+.action-btn:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.form-field {
+  display: grid;
+  gap: 6px;
+  min-width: 140px;
+  flex: 1;
+}
+
+.form-field span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.form-field-wide {
+  flex: 1 1 100%;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 100%;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(8, 127, 140, 0.12);
 }
 
 .inline-form {
@@ -446,18 +482,113 @@ th {
   font-size: inherit;
 }
 
-.inline-form button {
-  background: #087f8c;
-  color: #ffffff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
+.inline-form .btn-primary {
+  align-self: end;
 }
 
-.inline-form button:hover:not(:disabled) {
-  background: #075e69;
+.page-section {
+  margin-top: 18px;
+}
+
+.info-block {
+  padding: 16px 18px;
+}
+
+.info-block p {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.info-block small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.status-message {
+  padding: 10px 14px;
+  margin: 12px 18px 0;
+  border-radius: 7px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.status-message-success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.status-message-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.empty-state,
+.table-empty {
+  margin: 16px 18px;
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface-soft);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+.empty-state p,
+.table-empty {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.empty-state small {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.query-loading {
+  padding: 16px 18px;
+}
+
+.login-role-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.login-role-card {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.login-role-card:hover,
+.login-role-card.active {
+  border-color: var(--accent);
+  background: #e8f5f3;
+  color: var(--accent-strong);
+}
+
+.sidebar-user {
+  display: grid;
+  gap: 2px;
+}
+
+.logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* ── Sidebar Compact ───────────────────────────────────────── */
