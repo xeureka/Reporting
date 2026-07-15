@@ -1,5 +1,5 @@
 import {
-  boolean, date, index, integer, jsonb, pgEnum, pgTable, text, time, timestamp, varchar,
+  boolean, date, index, integer, jsonb, pgEnum, pgTable, real, text, time, timestamp, varchar,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -97,6 +97,7 @@ export const sections = pgTable(
     startDate: date('start_date').notNull(),
     endDate: date('end_date'),
     maxStudents: integer('max_students').default(20),
+    hourlyRate: real('hourly_rate').default(10),
     status: sectionStatus('status').notNull().default('active'),
     notes: text('notes'),
     ...audit,
@@ -230,6 +231,40 @@ export const studentPreferences = pgTable(
   ],
 );
 
+export const teacherPayments = pgTable(
+  'teacher_payments',
+  {
+    id: text('id').primaryKey(),
+    teacherId: text('teacher_id').notNull().references(() => teachers.id),
+    sectionId: text('section_id').notNull().references(() => sections.id),
+    classSessionId: text('class_session_id').notNull().references(() => classSessions.id),
+    hours: real('hours').notNull(),
+    paymentRecordId: text('payment_record_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('teacher_payments_teacher_idx').on(table.teacherId),
+    index('teacher_payments_section_idx').on(table.sectionId),
+    index('teacher_payments_session_idx').on(table.classSessionId),
+  ],
+);
+
+export const paymentRecords = pgTable(
+  'payment_records',
+  {
+    id: text('id').primaryKey(),
+    teacherId: text('teacher_id').notNull().references(() => teachers.id),
+    hoursPaid: real('hours_paid').notNull(),
+    amountPaid: real('amount_paid').notNull(),
+    notes: text('notes'),
+    paidBy: text('paid_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('payment_records_teacher_idx').on(table.teacherId),
+  ],
+);
+
 // ── Relations ─────────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ one }) => ({
@@ -290,4 +325,14 @@ export const teacherActivityLogRelations = relations(teacherActivityLog, ({ one 
 export const studentPreferencesRelations = relations(studentPreferences, ({ one }) => ({
   student: one(students, { fields: [studentPreferences.studentId], references: [students.id] }),
   preferredTeacher: one(teachers, { fields: [studentPreferences.preferredTeacherId], references: [teachers.id] }),
+}));
+
+export const teacherPaymentsRelations = relations(teacherPayments, ({ one }) => ({
+  teacher: one(teachers, { fields: [teacherPayments.teacherId], references: [teachers.id] }),
+  section: one(sections, { fields: [teacherPayments.sectionId], references: [sections.id] }),
+  classSession: one(classSessions, { fields: [teacherPayments.classSessionId], references: [classSessions.id] }),
+}));
+
+export const paymentRecordsRelations = relations(paymentRecords, ({ one }) => ({
+  teacher: one(teachers, { fields: [paymentRecords.teacherId], references: [teachers.id] }),
 }));

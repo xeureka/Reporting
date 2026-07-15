@@ -45,7 +45,7 @@ export class DrizzleRepository {
     return { id: t.id, courseName: t.courseName, level: t.level, totalUnits: t.totalUnits, totalLessons: t.totalLessons, description: t.description ?? undefined, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() };
   }
   private mapSection(t: typeof s.sections.$inferSelect): SectionDto {
-    return { id: t.id, sectionName: t.sectionName, classType: t.classType, teacherId: t.teacherId, courseId: t.courseId, scheduleDays: t.scheduleDays, startTime: t.startTime, endTime: t.endTime ?? undefined, startDate: t.startDate, endDate: t.endDate ?? undefined, maxStudents: t.maxStudents ?? undefined, status: t.status, notes: t.notes ?? undefined, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() };
+    return { id: t.id, sectionName: t.sectionName, classType: t.classType, teacherId: t.teacherId, courseId: t.courseId, scheduleDays: t.scheduleDays, startTime: t.startTime, endTime: t.endTime ?? undefined, startDate: t.startDate, endDate: t.endDate ?? undefined, maxStudents: t.maxStudents ?? undefined, hourlyRate: t.hourlyRate ?? undefined, status: t.status, notes: t.notes ?? undefined, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() };
   }
   private mapEnrollment(t: typeof s.enrollments.$inferSelect): EnrollmentDto {
     return { id: t.id, studentId: t.studentId, sectionId: t.sectionId, enrollmentDate: t.enrollmentDate, status: t.status as EnrollmentDto['status'], notes: t.notes ?? undefined, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() };
@@ -227,7 +227,7 @@ export class DrizzleRepository {
     return rows.map(this.mapSection);
   }
   async createSection(data: Record<string, unknown>) {
-    const rec = { id: id('sec'), sectionName: String(data.sectionName ?? ''), classType: data.classType as any, teacherId: String(data.teacherId ?? ''), courseId: String(data.courseId ?? ''), scheduleDays: String(data.scheduleDays ?? ''), startTime: String(data.startTime ?? '09:00'), endTime: this.str(data.endTime), startDate: String(data.startDate ?? today()), endDate: this.str(data.endDate), maxStudents: this.num(data.maxStudents) ?? 20, status: (data.status as any) ?? 'active', notes: this.str(data.notes) };
+    const rec = { id: id('sec'), sectionName: String(data.sectionName ?? ''), classType: data.classType as any, teacherId: String(data.teacherId ?? ''), courseId: String(data.courseId ?? ''), scheduleDays: String(data.scheduleDays ?? ''), startTime: String(data.startTime ?? '09:00'), endTime: this.str(data.endTime), startDate: String(data.startDate ?? today()), endDate: this.str(data.endDate), maxStudents: this.num(data.maxStudents) ?? 20, hourlyRate: this.num(data.hourlyRate) ?? 10, status: (data.status as any) ?? 'active', notes: this.str(data.notes) };
     const [inserted] = await this.db.insert(s.sections).values(rec).returning();
     if (!inserted) throw new Error('Failed to create section');
     return this.mapSection(inserted);
@@ -531,27 +531,151 @@ export class DrizzleRepository {
 
   // ── Payments ─────────────────────────────────────────────────────────────────
 
-  async paymentSummary(month: string, teacherId?: string) {
-    const startDate = `${month}-01`;
-    const endDate = `${month}-31`;
-    const activities = await this.getActivityLog({ teacherId, startDate, endDate });
-    const teachers = await this.listTeachers();
-    const teacherMap = new Map(teachers.map(t => [t.id, t.teacherName]));
+  async creditHoursForReport(classSessionId: string) {
+    const [session] = await this.db.select().from(s.classSessions).where(eq(s.classSessions.id, classSessionId)).limit(1);
+    if (!session) return;
+    const existing = await this.db.select().from(s.teacherPayments).where(eq(s.teacherPayments.classSessionId, classSessionId)).limit(1);
+    if (existing.length) return;
+    const [section] = await this.db.select().from(s.sections).where(eq(s.sections.id, session.sectionId)).limit(1);
+    if (!section) return;
+    const hours = (session.durationMinutes ?? 60) / 60;
+    await this.db.insert(s.teacherPayments).values({
+      id: id('tpay'),
+      teacherId: section.teacherId,
+      sectionId: section.id,
+      classSessionId,
+      hours,
+    });
+  }
 
-    const grouped = new Map<string, typeof activities>();
-    for (const a of activities) {
-      const existing = grouped.get(a.teacherId) ?? [];
-      existing.push(a);
-      grouped.set(a.teacherId, existing);
+  async getTeacherPayments(teacherId: string) {
+    const payments = await this.db.select().from(s.teacherPayments).where(eq(s.teacherPayments.teacherId, teacherId));
+    const sections = await this.db.select().from(s.sections).where(eq(s.sections.teacherId, teacherId));
+    const sectionMap = new Map(sections.map(sec => [sec.id, sec]));
+
+    const bySection = new Map<string, { timePaid: number; timeLeft: number; sessionsWorked: number }>();
+    for (const p of payments) {
+      const key = p.sectionId;
+      const cur = bySection.get(key) ?? { timePaid: 0, timeLeft: 0, sessionsWorked: 0 };
+      cur.sessionsWorked += 1;
+      if (p.paymentRecordId) cur.timePaid += p.hours;
+      else cur.timeLeft += p.hours;
+      bySection.set(key, cur);
     }
 
-    return Array.from(grouped.entries()).map(([tid, logs]) => ({
-      teacherId: tid,
-      teacherName: teacherMap.get(tid) ?? tid,
-      classesTaught: logs.filter(l => l.activityType === 'class_taught').length,
-      reportsSubmitted: logs.filter(l => l.activityType === 'report_submitted').length,
-      totalHours: logs.reduce((sum, l) => sum + ((l.metadata?.duration as number) ?? 60), 0) / 60,
-    }));
+    const classes = Array.from(bySection.entries()).map(([sectionId, stats]) => {
+      const sec = sectionMap.get(sectionId);
+      return {
+        sectionId,
+        sectionName: sec?.sectionName ?? 'Unknown',
+        classType: sec?.classType ?? 'Unknown',
+        hourlyRate: sec?.hourlyRate ?? 10,
+        sessionsWorked: stats.sessionsWorked,
+        timePaid: Math.round(stats.timePaid * 100) / 100,
+        timeLeft: Math.round(stats.timeLeft * 100) / 100,
+      };
+    });
+
+    const totalTimePaid = classes.reduce((s, c) => s + c.timePaid, 0);
+    const totalTimeLeft = classes.reduce((s, c) => s + c.timeLeft, 0);
+
+    return {
+      teacherId,
+      totalTimePaid: Math.round(totalTimePaid * 100) / 100,
+      totalTimeLeft: Math.round(totalTimeLeft * 100) / 100,
+      classes,
+    };
+  }
+
+  async getAllTeacherPaymentSummaries() {
+    const teachers = await this.listTeachers('active');
+    const results = [];
+    for (const t of teachers) {
+      const summary = await this.getTeacherPayments(t.id);
+      results.push({ ...summary, teacherName: t.teacherName });
+    }
+    return results;
+  }
+
+  async getPaymentHistory(filters?: { teacherId?: string; sectionId?: string }) {
+    const conditions = [];
+    if (filters?.teacherId) conditions.push(eq(s.paymentRecords.teacherId, filters.teacherId));
+    const records = conditions.length
+      ? await this.db.select().from(s.paymentRecords).where(and(...conditions)).orderBy(s.paymentRecords.createdAt)
+      : await this.db.select().from(s.paymentRecords).orderBy(s.paymentRecords.createdAt);
+
+    const teacherIds = [...new Set(records.map(r => r.teacherId))];
+    const teachers = teacherIds.length ? await this.db.select().from(s.teachers).where(inArray(s.teachers.id, teacherIds)) : [];
+    const teacherMap = new Map(teachers.map(t => [t.id, t.teacherName]));
+
+    const tpRows = await this.db.select().from(s.teacherPayments);
+    const recordToSection = new Map<string, string>();
+    for (const tp of tpRows) {
+      if (tp.paymentRecordId) recordToSection.set(tp.paymentRecordId, tp.sectionId);
+    }
+    const sectionIds = [...new Set(Array.from(recordToSection.values()))];
+    const sections = sectionIds.length ? await this.db.select().from(s.sections).where(inArray(s.sections.id, sectionIds)) : [];
+    const sectionMap = new Map(sections.map(sec => [sec.id, sec.sectionName]));
+
+    let filtered = records.map(r => {
+      const sectionId = recordToSection.get(r.id);
+      return {
+        id: r.id,
+        teacherId: r.teacherId,
+        teacherName: teacherMap.get(r.teacherId) ?? 'Unknown',
+        sectionId: sectionId ?? undefined,
+        sectionName: sectionId ? sectionMap.get(sectionId) ?? undefined : undefined,
+        hoursPaid: r.hoursPaid,
+        amountPaid: r.amountPaid,
+        notes: r.notes ?? undefined,
+        paidBy: r.paidBy ?? undefined,
+        createdAt: r.createdAt.toISOString(),
+      };
+    });
+
+    if (filters?.sectionId) {
+      filtered = filtered.filter(r => r.sectionId === filters.sectionId);
+    }
+
+    return filtered.reverse();
+  }
+
+  async recordPayment(data: { teacherId: string; sectionId: string; hoursPaid: number; amountPaid: number; notes?: string; paidBy?: string }) {
+    if (data.hoursPaid <= 0) throw new Error('Hours paid must be greater than 0');
+    if (data.amountPaid <= 0) throw new Error('Amount paid must be greater than 0');
+
+    const pendingPayments = await this.db.select().from(s.teacherPayments)
+      .where(and(
+        eq(s.teacherPayments.teacherId, data.teacherId),
+        eq(s.teacherPayments.sectionId, data.sectionId),
+        sql`${s.teacherPayments.paymentRecordId} IS NULL`,
+      ))
+      .orderBy(s.teacherPayments.createdAt);
+
+    const totalPending = Math.round(pendingPayments.reduce((s, p) => s + p.hours, 0) * 100) / 100;
+    if (totalPending <= 0) throw new Error('No unpaid hours remaining for this section');
+    if (data.hoursPaid > totalPending) throw new Error(`Cannot pay ${data.hoursPaid}h — only ${totalPending}h unpaid remaining for this section`);
+
+    const hoursToAllocate = Math.round(data.hoursPaid * 100) / 100;
+    const [record] = await this.db.insert(s.paymentRecords).values({
+      id: id('prec'),
+      teacherId: data.teacherId,
+      hoursPaid: hoursToAllocate,
+      amountPaid: data.amountPaid,
+      notes: data.notes ?? null,
+      paidBy: data.paidBy ?? null,
+    }).returning();
+    if (!record) throw new Error('Failed to create payment record');
+
+    let remaining = hoursToAllocate;
+    for (const p of pendingPayments) {
+      if (remaining <= 0) break;
+      const allocate = Math.min(remaining, p.hours);
+      await this.db.update(s.teacherPayments).set({ paymentRecordId: record.id }).where(eq(s.teacherPayments.id, p.id));
+      remaining = Math.round((remaining - allocate) * 100) / 100;
+    }
+
+    return { ...record, sectionId: data.sectionId };
   }
 
   // ── Reports ──────────────────────────────────────────────────────────────────

@@ -10,7 +10,7 @@ function authHeaders(): Record<string, string> {
 export interface Teacher { id: string; teacherName: string; phone?: string; email: string; status: string; hireDate?: string; notes?: string; createdAt: string; updatedAt: string; }
 export interface Student { id: string; studentName: string; phone?: string; email?: string; level: string; classType: string; status: string; registrationDate: string; notes?: string; createdAt: string; updatedAt: string; }
 export interface Course { id: string; courseName: string; level: string; totalUnits: number; totalLessons: number; description?: string; createdAt: string; updatedAt: string; }
-export interface Section { id: string; sectionName: string; classType: string; teacherId: string; courseId: string; scheduleDays: string; startTime: string; endTime?: string; startDate: string; endDate?: string; maxStudents?: number; status: string; notes?: string; createdAt: string; updatedAt: string; }
+export interface Section { id: string; sectionName: string; classType: string; teacherId: string; courseId: string; scheduleDays: string; startTime: string; endTime?: string; startDate: string; endDate?: string; maxStudents?: number; hourlyRate?: number; status: string; notes?: string; createdAt: string; updatedAt: string; }
 export interface Enrollment { id: string; studentId: string; sectionId: string; enrollmentDate: string; status: string; notes?: string; createdAt: string; updatedAt: string; }
 export interface ClassSession { id: string; sectionId: string; sessionDate: string; sessionNumber: number; lessonTitle?: string; lessonNumber?: number; sessionType: string; durationMinutes?: number; status: string; teacherNotes?: string; createdAt: string; updatedAt: string; }
 export interface SessionAttendance { id: string; classSessionId: string; studentId: string; attendanceStatus: string; present: boolean; absent: boolean; late: boolean; cancelled: boolean; notes?: string; createdAt: string; updatedAt: string; }
@@ -20,7 +20,16 @@ export interface DashboardData {
   totalActiveTeachers: number; todaysClasses: ClassSession[];
   recentActivity: ClassSession[]; sections: Section[];
 }
-export interface PaymentSummary { teacherId: string; teacherName: string; classesTaught: number; reportsSubmitted: number; totalHours: number; }
+export interface PaymentClassSummary {
+  sectionId: string; sectionName: string; classType: string; hourlyRate: number;
+  sessionsWorked: number; timePaid: number; timeLeft: number;
+}
+export interface TeacherPaymentSummary {
+  teacherId: string; teacherName: string; totalTimePaid: number; totalTimeLeft: number;
+  classes: PaymentClassSummary[];
+}
+export interface PaymentRecord { id: string; teacherId: string; sectionId: string; hoursPaid: number; amountPaid: number; notes?: string; paidBy?: string; createdAt: string; }
+export interface PaymentHistoryEntry { id: string; teacherId: string; teacherName: string; sectionId?: string; sectionName?: string; hoursPaid: number; amountPaid: number; notes?: string; paidBy?: string; createdAt: string; }
 
 async function authJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, headers: { ...authHeaders(), 'Content-Type': 'application/json', ...init?.headers } });
@@ -101,13 +110,17 @@ export const api = {
   teacherDashboard: (id: string) => authJson<DashboardData>(`${API_BASE_URL}/api/reports/teachers/${id}`),
   studentPage: (id: string) => authJson<{ student: Student; sections: Section[]; enrollments: Enrollment[]; attendance: SessionAttendance[] }>(`${API_BASE_URL}/api/reports/students/${id}`),
 
-  payments: (query?: { month?: string; teacherId?: string }) => {
+  payments: () => authJson<TeacherPaymentSummary[]>(`${API_BASE_URL}/api/payments`),
+  teacherPayments: (teacherId: string) => authJson<TeacherPaymentSummary>(`${API_BASE_URL}/api/payments/${teacherId}`),
+  paymentHistory: (query?: { teacherId?: string; sectionId?: string }) => {
     const params = new URLSearchParams();
-    if (query?.month) params.set('month', query.month);
     if (query?.teacherId) params.set('teacherId', query.teacherId);
+    if (query?.sectionId) params.set('sectionId', query.sectionId);
     const qs = params.toString();
-    return authJson<PaymentSummary[]>(`${API_BASE_URL}/api/payments${qs ? `?${qs}` : ''}`);
+    return authJson<PaymentHistoryEntry[]>(`${API_BASE_URL}/api/payments/history${qs ? `?${qs}` : ''}`);
   },
+  recordPayment: (body: { teacherId: string; sectionId: string; hoursPaid: number; amountPaid: number; notes?: string }) =>
+    authJson<PaymentRecord>(`${API_BASE_URL}/api/payments`, { method: 'POST', body: JSON.stringify(body) }),
 
   registerUser: (body: { name: string; email: string; role: string; teacherId?: string }) => authJson<{ id: string; email: string; password: string; role: string }>(`${API_BASE_URL}/api/auth/register`, { method: 'POST', body: JSON.stringify(body) }),
 

@@ -52,6 +52,7 @@ export function getNavItems(user: User): NavItem[] {
       { to: '/teacher', icon: HiOutlineAcademicCap, label: 'Dashboard' },
       { to: '/teacher/sections', icon: HiOutlineUserGroup, label: 'My Sections' },
       { to: '/teacher/students', icon: HiOutlineUsers, label: 'My Students' },
+      { to: '/teacher/payments', icon: HiOutlineBanknotes, label: 'My Payments' },
     ];
   }
 

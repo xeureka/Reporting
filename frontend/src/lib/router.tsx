@@ -17,6 +17,8 @@ import { SectionDetailPage } from '../pages/SectionDetailPage';
 import { TeachersPage } from '../pages/TeachersPage';
 import { TeacherDetailPage } from '../pages/TeacherDetailPage';
 import { PaymentsPage } from '../pages/PaymentsPage';
+import { TeacherPaymentPage } from '../pages/TeacherPaymentPage';
+import { TeacherPaymentsPage } from '../pages/TeacherPaymentsPage';
 
 const rootRoute = createRootRoute({ component: RootLayout });
 const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: '/login', component: LoginRoute });
@@ -37,16 +39,19 @@ const sessionsRoute = createRoute({ getParentRoute: () => protectedRoute, path: 
 const sessionActionRoute = createRoute({ getParentRoute: () => protectedRoute, path: '/sessions/$sessionId', component: SessionActionPage });
 const reportsRoute = createRoute({ getParentRoute: () => protectedRoute, path: '/reports', component: ReportsPage });
 const paymentsRoute = createRoute({ getParentRoute: () => protectedRoute, path: '/payments', component: PaymentsPage });
+const teacherPaymentRoute = createRoute({ getParentRoute: () => protectedRoute, path: '/payments/$teacherId', component: TeacherPaymentPage });
 const teacherRoute = createRoute({ getParentRoute: () => protectedRoute, path: '/teacher', component: TeacherDashboardPage });
 const teacherSectionsRoute = createRoute({ getParentRoute: () => protectedRoute, path: '/teacher/sections', component: SectionsPage });
 const teacherStudentsRoute = createRoute({ getParentRoute: () => protectedRoute, path: '/teacher/students', component: TeacherStudentsPage });
+const teacherPaymentsRoute = createRoute({ getParentRoute: () => protectedRoute, path: '/teacher/payments', component: TeacherPaymentsPage });
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
   protectedRoute.addChildren([
     indexRoute, sectionsRoute, sectionDetailRoute, teachersRoute, teacherDetailRoute, studentsRoute,
     studentRoute, coursesRoute, sessionsRoute, sessionActionRoute, reportsRoute, paymentsRoute,
-    teacherRoute, teacherSectionsRoute, teacherStudentsRoute,
+    teacherPaymentRoute,
+    teacherRoute, teacherSectionsRoute, teacherStudentsRoute, teacherPaymentsRoute,
   ]),
 ]);
 

@@ -91,13 +91,14 @@ export const Section = z.object({
   startDate: IsoDate,
   endDate: IsoDate.optional(),
   maxStudents: z.number().int().positive().optional(),
+  hourlyRate: z.number().optional(),
   status: z.enum(SectionStatuses),
   notes: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
 export const CreateSection = Section.omit({ id: true, createdAt: true, updatedAt: true }).partial({
-  endTime: true, endDate: true, maxStudents: true, notes: true, status: true,
+  endTime: true, endDate: true, maxStudents: true, hourlyRate: true, notes: true, status: true,
 });
 export const UpdateSection = CreateSection.partial();
 
@@ -234,12 +235,52 @@ export const ImportResult = z.object({
 
 // ── Payment Summary ───────────────────────────────────────────────────────────
 
-export const PaymentSummary = z.object({
+export const TeacherPaymentSummary = z.object({
   teacherId: Id,
   teacherName: z.string(),
-  classesTaught: z.number(),
-  reportsSubmitted: z.number(),
-  totalHours: z.number(),
+  totalTimePaid: z.number(),
+  totalTimeLeft: z.number(),
+  classes: z.array(z.object({
+    sectionId: Id,
+    sectionName: z.string(),
+    classType: z.string(),
+    hourlyRate: z.number(),
+    sessionsWorked: z.number(),
+    timePaid: z.number(),
+    timeLeft: z.number(),
+  })),
+});
+
+export const PaymentRecord = z.object({
+  id: Id,
+  teacherId: Id,
+  sectionId: Id.optional(),
+  hoursPaid: z.number(),
+  amountPaid: z.number(),
+  notes: z.string().optional(),
+  paidBy: z.string().optional(),
+  createdAt: z.string(),
+});
+
+export const CreatePaymentRecord = z.object({
+  teacherId: Id,
+  sectionId: Id,
+  hoursPaid: z.number().positive(),
+  amountPaid: z.number().positive(),
+  notes: z.string().optional(),
+});
+
+export const PaymentHistoryEntry = z.object({
+  id: Id,
+  teacherId: Id,
+  teacherName: z.string(),
+  sectionId: Id.optional(),
+  sectionName: z.string().optional(),
+  hoursPaid: z.number(),
+  amountPaid: z.number(),
+  notes: z.string().optional(),
+  paidBy: z.string().optional(),
+  createdAt: z.string(),
 });
 
 // ── Types ─────────────────────────────────────────────────────────────────────

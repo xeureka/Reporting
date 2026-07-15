@@ -9,7 +9,8 @@ import {
   AuthUser, Teacher, Course, Student, Section, Enrollment, ClassSession,
   CreateTeacher, UpdateTeacher, CreateCourse, UpdateCourse, CreateStudent, UpdateStudent,
   CreateSection, UpdateSection, CreateEnrollment, CreateClassSession, UpdateClassSession,
-  CreateSessionReport, AttendancePayload, DashboardData, ImportResult, PaymentSummary,
+  CreateSessionReport, AttendancePayload, DashboardData, ImportResult, TeacherPaymentSummary,
+  PaymentRecord, CreatePaymentRecord, PaymentHistoryEntry,
 } from './domain/contracts.js';
 import { drizzleRepository as repo } from './repositories/drizzle.js';
 import { loadEnv } from './load-env.js';
@@ -462,6 +463,9 @@ app.openapi(
     if (!user) throw new HTTPException(401, { message: 'Unauthorized' });
     const report = await repo.createReport(classSessionId, user.teacherId ?? user.id, c.req.valid('json') as Record<string, unknown>);
     await repo.logActivity(user.teacherId ?? user.id, 'report_submitted', classSessionId, undefined, 'Session report submitted');
+    if (report.reportStatus === 'submitted') {
+      await repo.creditHoursForReport(classSessionId);
+    }
     return c.json(report, 200);
   },
 );
@@ -532,17 +536,70 @@ app.openapi(
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 
+const PaymentHistoryResponse = z.array(PaymentHistoryEntry);
+
 app.openapi(
   createRoute({
     method: 'get', path: '/api/payments',
-    request: { query: z.object({ month: z.string().optional(), teacherId: z.string().optional() }) },
-    responses: ok(z.array(PaymentSummary)),
+    responses: ok(z.array(TeacherPaymentSummary)),
+  }),
+  async (c) => {
+    const rows = await repo.getAllTeacherPaymentSummaries();
+    return c.json(rows);
+  },
+);
+app.openapi(
+  createRoute({
+    method: 'get', path: '/api/payments/history',
+    request: { query: z.object({ teacherId: z.string().optional(), sectionId: z.string().optional() }) },
+    responses: ok(PaymentHistoryResponse),
   }),
   async (c) => {
     const q = c.req.valid('query');
-    const month = q.month ?? new Date().toISOString().slice(0, 7);
-    const rows = await repo.paymentSummary(month, q.teacherId);
+    const rows = await repo.getPaymentHistory({ teacherId: q.teacherId, sectionId: q.sectionId });
     return c.json(rows);
+  },
+);
+app.openapi(
+  createRoute({
+    method: 'get', path: '/api/payments/{id}',
+    request: { params: IdParam },
+    responses: { 200: { content: { 'application/json': { schema: TeacherPaymentSummary } }, description: 'OK' }, 404: { content: { 'application/json': { schema: ErrorResponse } }, description: 'Not found' } },
+  }),
+  async (c) => {
+    const teacherId = c.req.valid('param').id;
+    const teachers = await repo.listTeachers();
+    const teacher = teachers.find(t => t.id === teacherId);
+    if (!teacher) throw new HTTPException(404, { message: 'Teacher not found' });
+    const summary = await repo.getTeacherPayments(teacherId);
+    return c.json({ ...summary, teacherName: teacher.teacherName }, 200);
+  },
+);
+app.openapi(
+  createRoute({
+    method: 'post', path: '/api/payments',
+    request: { body: { content: { 'application/json': { schema: CreatePaymentRecord } } } },
+    responses: created(PaymentRecord),
+  }),
+  async (c) => {
+    const body = c.req.valid('json');
+    const userId = getUserId(c);
+    try {
+      const record = await repo.recordPayment({ ...body, paidBy: userId });
+      return c.json({
+        id: record.id,
+        teacherId: record.teacherId,
+        sectionId: record.sectionId,
+        hoursPaid: record.hoursPaid,
+        amountPaid: record.amountPaid,
+        notes: record.notes ?? undefined,
+        paidBy: record.paidBy ?? undefined,
+        createdAt: record.createdAt.toISOString(),
+      }, 201);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Payment failed';
+      throw new HTTPException(400, { message });
+    }
   },
 );
 

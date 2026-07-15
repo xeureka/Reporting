@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { HiOutlinePlus, HiOutlineKey } from 'react-icons/hi2';
@@ -27,6 +27,13 @@ export function TeachersPage() {
   const [resetting, setResetting] = useState(false);
 
   const teachers = useQuery({ queryKey: ['teachers'], queryFn: () => api.teachers(), retry: false });
+  const payments = useQuery({ queryKey: ['payments'], queryFn: () => api.payments(), retry: false });
+
+  const paymentMap = useMemo(() => {
+    const map = new Map<string, { paid: number; unpaid: number }>();
+    for (const p of payments.data ?? []) map.set(p.teacherId, { paid: p.totalTimePaid, unpaid: p.totalTimeLeft });
+    return map;
+  }, [payments.data]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +85,7 @@ export function TeachersPage() {
           {teachers.data && teachers.data.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">No teachers found.</p>}
           {teachers.data && teachers.data.length > 0 && (
             <Table>
-              <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead>Hire Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead>Hire Date</TableHead><TableHead className="text-right">Time Paid</TableHead><TableHead className="text-right">Time Unpaid</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
               <TableBody>
                 {teachers.data.map(t => (
                   <TableRow key={t.id}>
@@ -89,6 +96,14 @@ export function TeachersPage() {
                     <TableCell>{t.phone ?? '-'}</TableCell>
                     <TableCell><Badge variant={t.status === 'active' ? 'success' : 'neutral'}>{t.status}</Badge></TableCell>
                     <TableCell>{t.hireDate ?? '-'}</TableCell>
+                    <TableCell className="text-right">
+                      <span className="text-emerald-600 font-medium">{(paymentMap.get(t.id)?.paid ?? 0).toFixed(1)}h</span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {(paymentMap.get(t.id)?.unpaid ?? 0) > 0
+                        ? <span className="text-amber-600 font-medium">{(paymentMap.get(t.id)?.unpaid ?? 0).toFixed(1)}h</span>
+                        : <span className="text-muted-foreground">0h</span>}
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" className="gap-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50" onClick={() => { setResetTarget({ id: t.id, name: t.teacherName }); setResetPassword(''); }}>
                         <HiOutlineKey size={14} /> Reset Password
