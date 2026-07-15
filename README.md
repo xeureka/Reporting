@@ -1,16 +1,14 @@
 # Speak To Reach
 
-An English language course management platform for schools — manage teachers, students, courses, sections, attendance, sessions, and reports in one place.
-
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | React 19, Vite 8, TanStack Router, TanStack Query, Tailwind CSS 4 |
-| **Backend** | Hono, Drizzle ORM, PostgreSQL (Neon), Zod, JWT, OpenAPI |
-| **Language** | TypeScript (strict mode) |
-| **Package Manager** | pnpm 10 (workspace monorepo) |
-| **Deployment** | Vercel (frontend), Render (backend) |
+| Layer               | Technology                                                        |
+| ------------------- | ----------------------------------------------------------------- |
+| **Frontend**        | React 19, Vite 8, TanStack Router, TanStack Query, Tailwind CSS 4 |
+| **Backend**         | Hono, Drizzle ORM, PostgreSQL (Neon), Zod, JWT, OpenAPI           |
+| **Language**        | TypeScript (strict mode)                                          |
+| **Package Manager** | pnpm 10 (workspace monorepo)                                      |
+| **Deployment**      | Vercel (frontend), Render (backend)                               |
 
 ## Folder Structure
 
@@ -92,9 +90,9 @@ The backend falls back to an **in-memory repository** if `DATABASE_URL` is not s
 
 Optional env vars:
 
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `3000` | Backend server port |
+| Variable     | Default                     | Description            |
+| ------------ | --------------------------- | ---------------------- |
+| `PORT`       | `3000`                      | Backend server port    |
 | `JWT_SECRET` | `speak-to-reach-dev-secret` | Secret for JWT signing |
 
 ### 3. Database Setup (optional)
@@ -120,14 +118,14 @@ pnpm --filter @speak-to-reach/frontend dev   # http://localhost:5173 (proxies /a
 
 ## Scripts
 
-| Script | Description |
-|---|---|
-| `pnpm dev` | Start backend + frontend in parallel |
-| `pnpm build` | Build backend + frontend |
-| `pnpm check` | Type-check backend + build frontend |
-| `pnpm db:generate` | Generate Drizzle migrations |
-| `pnpm db:migrate` | Apply pending migrations |
-| `pnpm db:seed` | Seed database with sample data |
+| Script             | Description                          |
+| ------------------ | ------------------------------------ |
+| `pnpm dev`         | Start backend + frontend in parallel |
+| `pnpm build`       | Build backend + frontend             |
+| `pnpm check`       | Type-check backend + build frontend  |
+| `pnpm db:generate` | Generate Drizzle migrations          |
+| `pnpm db:migrate`  | Apply pending migrations             |
+| `pnpm db:seed`     | Seed database with sample data       |
 
 ## Docker
 
@@ -141,17 +139,17 @@ Spins up the full stack — backend on port 3000, frontend via nginx on port 80.
 
 The backend exposes an OpenAPI spec. With the server running:
 
-| Resource | URL |
-|---|---|
-| **Swagger UI** | `http://localhost:3000/api/docs` |
+| Resource         | URL                                  |
+| ---------------- | ------------------------------------ |
+| **Swagger UI**   | `http://localhost:3000/api/docs`     |
 | **OpenAPI JSON** | `http://localhost:3000/openapi.json` |
 
 ## Deployment
 
-| Service | Platform | Config |
-|---|---|---|
-| **Frontend** | Vercel | `vercel.json` — set `VITE_API_URL` to backend URL |
-| **Backend** | Render | `render.yaml` — Docker-based, auto-provisions JWT_SECRET |
+| Service      | Platform | Config                                                   |
+| ------------ | -------- | -------------------------------------------------------- |
+| **Frontend** | Vercel   | `vercel.json` — set `VITE_API_URL` to backend URL        |
+| **Backend**  | Render   | `render.yaml` — Docker-based, auto-provisions JWT_SECRET |
 
 ## License
 
