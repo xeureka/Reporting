@@ -1,4 +1,4 @@
-import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
+import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router';
 
 import { ProtectedLayout } from '../components/layout/ProtectedLayout';
 import { RootLayout } from '../components/layout/RootLayout';
@@ -53,6 +53,7 @@ const routeTree = rootRoute.addChildren([
     teacherPaymentRoute,
     teacherRoute, teacherSectionsRoute, teacherStudentsRoute, teacherPaymentsRoute,
   ]),
+  createRoute({ getParentRoute: () => rootRoute, path: '$', beforeLoad: () => { throw redirect({ to: '/login' }); } }),
 ]);
 
 export const router = createRouter({ routeTree });
