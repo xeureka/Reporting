@@ -1,17 +1,16 @@
-# Speak To Reach — School Management System
+# Speak To Reach
 
-A school management platform for English language courses with three roles: **Admin**, **Teacher**, and **Student**.
+An English language course management platform for schools — manage teachers, students, courses, sections, attendance, sessions, and reports in one place.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | React 19, Vite 8, TanStack Router, TanStack Query, react-icons |
+| **Frontend** | React 19, Vite 8, TanStack Router, TanStack Query, Tailwind CSS 4 |
 | **Backend** | Hono, Drizzle ORM, PostgreSQL (Neon), Zod, JWT, OpenAPI |
-| **Database** | PostgreSQL via Neon (serverless) |
-| **Language** | TypeScript 6 (strict mode) |
+| **Language** | TypeScript (strict mode) |
 | **Package Manager** | pnpm 10 (workspace monorepo) |
-| **Infrastructure** | Vercel (deployment) |
+| **Deployment** | Vercel (frontend), Render (backend) |
 
 ## Folder Structure
 
@@ -27,132 +26,133 @@ A school management platform for English language courses with three roles: **Ad
 │   │   │   └── seed.ts           # Database seed script
 │   │   ├── domain/
 │   │   │   └── contracts.ts      # Zod schemas & types
-│   │   ├── notion/               # Notion CLI and workspace integration
+│   │   ├── notion/               # Notion workspace integration
 │   │   ├── repositories/
 │   │   │   ├── drizzle.ts        # PostgreSQL repository
-│   │   │   └── memory.ts         # In-memory fallback repository
+│   │   │   └── memory.ts         # In-memory fallback
 │   │   ├── index.ts              # API routes (OpenAPIHono)
 │   │   ├── load-env.ts           # Custom .env loader
 │   │   └── server.ts             # Dev server entry (port 3000)
-│   ├── drizzle.config.ts         # Drizzle ORM configuration
+│   ├── drizzle.config.ts
+│   ├── Dockerfile
 │   ├── package.json
 │   └── tsconfig.json
 │
 ├── frontend/
-│   ├── dist/                     # Production build output
-│   ├── public/                   # Public static assets (favicon, icons)
+│   ├── public/                   # Static assets
 │   ├── src/
 │   │   ├── assets/               # Images and SVGs
-│   │   ├── components/           # Reusable React components
-│   │   │   ├── forms/            # Form components (e.g., ChangePassword)
-│   │   │   ├── layout/           # Layout wrappers (RootLayout, ProtectedLayout)
-│   │   │   ├── lists/            # Data views (Dashboards, Courses, Students)
-│   │   │   └── ui/               # Generic UI elements (Badges, Tables, Panels)
-│   │   ├── lib/                  # Utilities, router config, query-client, constants
-│   │   ├── pages/                # Route-level components (Dashboards, Login, Reports)
-│   │   ├── api.ts                # Typed API client
-│   │   ├── App.css               # Application styles
-│   │   ├── App.tsx               # Main application routing and providers
-│   │   ├── auth.tsx              # Authentication context (JWT)
-│   │   ├── index.css             # CSS variables & resets
+│   │   ├── components/
+│   │   │   ├── layout/           # RootLayout, ProtectedLayout
+│   │   │   └── ui/               # Button, Input, Dialog, Table, etc.
+│   │   ├── lib/                  # Router, query client, constants, utils
+│   │   ├── pages/                # Route pages (Dashboards, Login, Courses, etc.)
+│   │   ├── api.ts                # Typed API client (uses VITE_API_URL)
+│   │   ├── App.tsx               # Root providers and router
+│   │   ├── auth.tsx              # Auth context (JWT)
+│   │   ├── index.css
 │   │   └── main.tsx              # React entry point
-│   ├── index.html                # Vite HTML entry point
+│   ├── index.html
+│   ├── nginx.conf                # Production reverse proxy config
+│   ├── Dockerfile
 │   ├── package.json
-│   ├── tsconfig.*.json           # TypeScript configurations (app, node, base)
-│   └── vite.config.ts            # Vite bundler configuration
+│   ├── tsconfig.*.json
+│   └── vite.config.ts
 │
-├── package.json                  # Root workspace config
-├── pnpm-lock.yaml                # pnpm dependency lockfile
-├── pnpm-workspace.yaml           # pnpm workspace definition
-├── README.md                     # Project documentation
-└── vercel.json                   # Vercel deployment config
+├── docker-compose.yml            # Full-stack Docker setup
+├── render.yaml                   # Render deployment blueprint
+├── vercel.json                   # Vercel deployment config
+├── package.json                  # Root workspace scripts
+├── pnpm-lock.yaml
+└── pnpm-workspace.yaml
 ```
 
-## Installation
+## Getting Started
 
 ### Prerequisites
 
 - **Node.js** >= 20
-- **pnpm** >= 10 (install: `npm i -g pnpm`)
+- **pnpm** >= 10 (`npm i -g pnpm`)
 
-### 1. Clone & Install Dependencies
+### 1. Clone & Install
 
 ```bash
-git clone <repo-url> reporting
-cd reporting
+git clone <repo-url> speak-to-reach
+cd speak-to-reach
 pnpm install
 ```
 
-### 2. Configure Environment Variables
+### 2. Configure Environment
 
 ```bash
-# Backend — create backend/.env with your PostgreSQL connection string:
 echo 'DATABASE_URL="postgresql://user:password@host:5432/db?sslmode=require"' > backend/.env
 ```
 
-The backend automatically falls back to an **in-memory repository** (no database needed) if `DATABASE_URL` is not set.
+The backend falls back to an **in-memory repository** if `DATABASE_URL` is not set — no database needed to explore the app.
 
-Optional environment variables:
+Optional env vars:
 
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3000` | Backend server port |
 | `JWT_SECRET` | `speak-to-reach-dev-secret` | Secret for JWT signing |
-| `NOTION_TOKEN` | — | Notion API token (workspace generator) |
-| `NOTION_PARENT_PAGE_ID` | — | Notion parent page ID |
 
 ### 3. Database Setup (optional)
 
-Skip this step if you want to use the in-memory fallback.
-
 ```bash
-# Generate migrations (if schema changes)
-pnpm db:generate
-
-# Apply migrations
-pnpm db:migrate
-
-# Seed with sample data
-pnpm db:seed
+pnpm db:generate   # Generate migrations
+pnpm db:migrate    # Apply migrations
+pnpm db:seed       # Seed with sample data
 ```
 
-### 4. Run in Development
+### 4. Run
 
 ```bash
-# Start both backend and frontend concurrently
-pnpm dev
+pnpm dev            # Start backend + frontend in parallel
 ```
 
-Or start them separately:
+Or separately:
 
 ```bash
-# Backend only (http://localhost:3000)
-pnpm --filter @speak-to-reach/backend dev
-
-# Frontend only (http://localhost:5173, proxies /api -> :3000)
-pnpm --filter @speak-to-reach/frontend dev
+pnpm --filter @speak-to-reach/backend dev    # http://localhost:3000
+pnpm --filter @speak-to-reach/frontend dev   # http://localhost:5173 (proxies /api -> :3000)
 ```
 
-## Available Scripts
+## Scripts
 
 | Script | Description |
 |---|---|
 | `pnpm dev` | Start backend + frontend in parallel |
-| `pnpm build` | Compile backend (tsc) + build frontend (vite) |
+| `pnpm build` | Build backend + frontend |
 | `pnpm check` | Type-check backend + build frontend |
 | `pnpm db:generate` | Generate Drizzle migrations |
 | `pnpm db:migrate` | Apply pending migrations |
 | `pnpm db:seed` | Seed database with sample data |
 
+## Docker
+
+```bash
+docker compose up --build
+```
+
+Spins up the full stack — backend on port 3000, frontend via nginx on port 80.
+
 ## API
 
-The API is automatically documented via OpenAPI. With the server running, visit:
+The backend exposes an OpenAPI spec. With the server running:
 
 | Resource | URL |
 |---|---|
 | **Swagger UI** | `http://localhost:3000/api/docs` |
 | **OpenAPI JSON** | `http://localhost:3000/openapi.json` |
 
-The Swagger UI provides an interactive interface to explore and test all API endpoints directly from your browser.
+## Deployment
 
-All API routes are prefixed with `/api/` and include endpoints for auth, teachers, students, courses, assignments, sessions, homework, progress, performance, and reports.
+| Service | Platform | Config |
+|---|---|---|
+| **Frontend** | Vercel | `vercel.json` — set `VITE_API_URL` to backend URL |
+| **Backend** | Render | `render.yaml` — Docker-based, auto-provisions JWT_SECRET |
+
+## License
+
+UNLICENSED
