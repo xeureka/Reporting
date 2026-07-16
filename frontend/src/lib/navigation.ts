@@ -24,7 +24,6 @@ export const ADMIN_ONLY_PATHS = [
   '/teachers',
   '/students',
   '/courses',
-  '/sessions',
   '/reports',
   '/payments',
 ] as const;
