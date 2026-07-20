@@ -1,10 +1,13 @@
 import { defineConfig } from 'drizzle-kit';
+import { loadEnv } from './src/load-env.js';
+
+loadEnv();
 
 export default defineConfig({
   schema: './src/db/schema.ts',
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/speak_to_reach',
+    url: process.env.DATABASE_URL ?? '',
   },
 });
